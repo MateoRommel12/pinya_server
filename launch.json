@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI (uvicorn)",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app:app", "--reload"],
+      "cwd": "${workspaceFolder}/PineappleServer",
+      "env": {
+        // "MODEL_PATH": "C:\\...\\pineapple_sweetness_classifier_mobilenetv2.keras",
+        // "CLASS_ORDER": "High,Medium,Low"
+      },
+      "jinja": true,
+      "console": "integratedTerminal"
+    }
+  ]
+}
