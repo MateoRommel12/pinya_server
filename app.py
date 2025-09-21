@@ -651,19 +651,16 @@ class TensorFlowJSPineappleDetector:
             }
         }
 
-# Initialize both models
+# Initialize classifier only (detection handled by React Native)
 try:
-    # Load TensorFlow.js YOLOv8 detector with your trained model
-    detector = TensorFlowJSPineappleDetector(DETECTOR_PATH)
-    print(f"✅ TensorFlow.js YOLOv8 pineapple detector loaded from: {DETECTOR_PATH}")
-    
     classifier = KerasClassifier(MODEL_PATH, CLASS_NAMES)
     print(f"✅ Sweetness classifier loaded from: {MODEL_PATH}")
     print(f"🍯 Classes: {CLASS_NAMES}")
-    print(f"🚀 Backend ready for full processing (TensorFlow.js detection + sweetness)")
+    print(f"🚀 Backend ready for sweetness analysis only (detection handled by React Native)")
+    detector = None  # Disabled - detection handled by React Native
 except Exception as e:
-    print(f"⚠️  Warning: Could not load models: {e}")
-    print("Models will be loaded on first prediction request")
+    print(f"⚠️  Warning: Could not load classifier: {e}")
+    print("Classifier will be loaded on first prediction request")
     detector = None
     classifier = None
 
@@ -682,9 +679,9 @@ app.add_middleware(
 def health():
     return {
         "status": "ok",
-        "mode": "full_processing",
-        "detection_method": "backend_tensorflow_js",
-        "detector_path": DETECTOR_PATH,
+        "mode": "sweetness_only",
+        "detection_method": "react_native",
+        "detector_path": "disabled",
         "classifier_path": MODEL_PATH,
         "class_names": CLASS_NAMES,
         "tf_version": tf.__version__,
@@ -706,48 +703,30 @@ async def predict(file: UploadFile = File(...), db: Session = Depends(get_db)):
         f.write(data)
 
     try:
-        # Lazy load models with better error handling
-        global detector, classifier
-        if detector is None:
-            print(f"🔄 Loading detector from: {DETECTOR_PATH}")
-            detector = TensorFlowJSPineappleDetector(DETECTOR_PATH)
-            # Force model loading immediately
-            print(f"🔄 Force loading SavedModel...")
-            detector._load_model()
+        # Lazy load classifier only (detection handled by React Native)
+        global classifier
         if classifier is None:
             print(f"🔄 Loading classifier from: {MODEL_PATH}")
             classifier = KerasClassifier(MODEL_PATH, CLASS_NAMES)
 
-        print("🍍 Backend: Full processing (detection + sweetness analysis)")
+        print("🍍 Backend: Sweetness analysis only (detection handled by React Native)")
         
-        # Step 1: Detect if image contains pineapple using YOLOv8
-        detection_result = detector.detect(data)
+        # Perform sweetness classification directly (assuming valid pineapple image from React Native)
+        sweetness_result = classifier.predict(data)
         
         result = {
-            "is_pineapple": detection_result["is_pineapple"],
-            "detection_confidence": detection_result["confidence"],
-            "detection_threshold": detection_result["threshold"],
-            "confidence_threshold": detection_result["confidence_threshold"],
-            "detections": detection_result["detections"],
-            "total_detections": detection_result["total_detections"],
-            "all_detections": detection_result.get("all_detections", []),
-            "debug_info": detection_result.get("debug_info", {})
+            "is_pineapple": True,  # Assumed since detection is handled by React Native
+            "detection_confidence": None,  # Not applicable - handled by React Native
+            "detection_threshold": None,
+            "confidence_threshold": None,
+            "detections": None,
+            "total_detections": None,
+            "all_detections": [],
+            "debug_info": {"detection_method": "react_native"},
+            "prediction": sweetness_result["prediction"],
+            "confidence": sweetness_result["confidence"],
+            "probabilities": sweetness_result["probabilities"]
         }
-        
-        # Step 2: Only classify sweetness if pineapple is detected
-        if detection_result["is_pineapple"]:
-            sweetness_result = classifier.predict(data)
-            result.update({
-                "prediction": sweetness_result["prediction"],
-                "confidence": sweetness_result["confidence"],
-                "probabilities": sweetness_result["probabilities"]
-            })
-        else:
-            result.update({
-                "prediction": None,
-                "confidence": None,
-                "probabilities": None
-            })
             
     except Exception as e:
         try:
