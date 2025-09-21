@@ -29,11 +29,11 @@ COPY assets/ assets/
 RUN rm -rf /tmp/* /var/tmp/* /root/.cache/*
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
+ENV PORT=8080
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Health check
@@ -41,4 +41,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:$PORT/health || exit 1
 
 # Start command
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]

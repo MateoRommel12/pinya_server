@@ -44,7 +44,6 @@ README.md
 
 # Railway specific
 railway.toml
-render.yaml
 
 # Docker
 Dockerfile
@@ -54,3 +53,5 @@ Dockerfile
 launch.json
 run_backend.bat
 
+# Fly.io specific
+fly.toml
