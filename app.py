@@ -145,10 +145,45 @@ class UltralyticsYOLODetector:
         
         try:
             from ultralytics import YOLO
+            import torch
             
             print(f"🔄 Loading YOLOv8 model from: {self.pt_path}")
-            self.model = YOLO(self.pt_path)
-            print(f"✅ YOLOv8 model loaded successfully!")
+            
+            # Handle PyTorch security settings for model loading
+            try:
+                # First try with weights_only=False (for trusted models)
+                print("🔧 Attempting to load with weights_only=False...")
+                
+                # Set PyTorch to allow unsafe loading for YOLOv8 models
+                original_weights_only = getattr(torch, '_weights_only_unpickler', None)
+                
+                # Add safe globals for ultralytics classes
+                torch.serialization.add_safe_globals([
+                    'ultralytics.nn.tasks.DetectionModel',
+                    'ultralytics.nn.modules.conv.Conv',
+                    'ultralytics.nn.modules.block.C2f',
+                    'ultralytics.nn.modules.head.Detect'
+                ])
+                
+                self.model = YOLO(self.pt_path)
+                print(f"✅ YOLOv8 model loaded successfully!")
+                
+            except Exception as load_error:
+                print(f"⚠️ Standard loading failed: {load_error}")
+                print("🔧 Trying alternative loading method...")
+                
+                # Alternative: Patch torch.load temporarily
+                original_load = torch.load
+                def patched_load(*args, **kwargs):
+                    kwargs['weights_only'] = False
+                    return original_load(*args, **kwargs)
+                
+                torch.load = patched_load
+                try:
+                    self.model = YOLO(self.pt_path)
+                    print(f"✅ YOLOv8 model loaded with patched torch.load!")
+                finally:
+                    torch.load = original_load
             
             # Test the model with a simple inference
             print("🧪 Testing model with dummy inference...")
