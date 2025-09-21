@@ -42,16 +42,6 @@ uploads/*
 # Documentation
 README.md
 
-# Railway specific
-railway.toml
-
-# Docker
-Dockerfile
-.dockerignore
-
 # Other config files
 launch.json
 run_backend.bat
-
-# Fly.io specific
-fly.toml
