@@ -310,7 +310,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return {"message": "Pineapple API is running", "status": "ok", "version": "3.0.0"}
 
 @app.get("/health")
 def health():
@@ -329,6 +334,15 @@ def health():
         "class_names": CLASS_NAMES,
         "tf_version": tf.__version__,
         "server_time": datetime.datetime.utcnow().isoformat() + "Z",
+    }
+
+@app.get("/test")
+def test_connection():
+    """Simple endpoint for frontend connection testing"""
+    return {
+        "status": "connected",
+        "message": "Backend connection successful",
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
     }
 
 @app.post("/predict")
