@@ -110,15 +110,15 @@ class KerasClassifier:
         }
 
 # ---------------- TensorFlow.js YOLOv8 Pineapple Detector ----------------
-class TensorFlowJSPineappleDetector:
-    def __init__(self, model_dir: str):
-        self.model_dir = model_dir
+class UltralyticsYOLODetector:
+    def __init__(self, model_path: str):
+        self.model_path = model_path
         
         # Check for TensorFlow Lite model first (more reliable for YOLOv8)
         tflite_paths = [
-            os.path.join(model_dir, "best_saved_model", "best_float32.tflite"),
-            os.path.join(model_dir, "best_float32.tflite"),
-            os.path.join(model_dir, "model.tflite")
+            os.path.join(model_path, "best_saved_model", "best_float32.tflite"),
+            os.path.join(model_path, "best_float32.tflite"),
+            os.path.join(model_path, "model.tflite")
         ]
         
         self.tflite_path = None
@@ -131,9 +131,9 @@ class TensorFlowJSPineappleDetector:
         # Fallback to SavedModel
         if not self.tflite_path:
             savedmodel_paths = [
-                os.path.join(model_dir, "best_saved_model"),
-                os.path.join(model_dir, "saved_model"),
-                model_dir
+                os.path.join(model_path, "best_saved_model"),
+                os.path.join(model_path, "saved_model"),
+                model_path
             ]
             
             self.savedmodel_path = None
@@ -145,16 +145,16 @@ class TensorFlowJSPineappleDetector:
         
         # Fallback to TensorFlow.js format
         if not self.savedmodel_path:
-            self.model_json_path = os.path.join(model_dir, "model.json")
+            self.model_json_path = os.path.join(model_path, "model.json")
             if os.path.exists(self.model_json_path):
-                weight_files = [f for f in os.listdir(model_dir) if f.endswith('.bin')]
+                weight_files = [f for f in os.listdir(model_path) if f.endswith('.bin')]
                 if weight_files:
                     print(f"📁 TensorFlow.js model found: {self.model_json_path}")
                     print(f"📦 Weight files: {weight_files}")
                 else:
-                    raise RuntimeError(f"No .bin weight files found in: {model_dir}")
+                    raise RuntimeError(f"No .bin weight files found in: {model_path}")
             else:
-                raise RuntimeError(f"No model found at: {model_dir}. Looking for SavedModel or TensorFlow.js format.")
+                raise RuntimeError(f"No model found at: {model_path}. Looking for SavedModel or TensorFlow.js format.")
         
         self.model = None
         self.input_size = (640, 640)  # Match SavedModel signature: 640x640
@@ -206,7 +206,7 @@ class TensorFlowJSPineappleDetector:
                     self.model = "tfjs_model_placeholder"
                 else:
                     print(f"❌ No TensorFlow.js model found either")
-                    raise RuntimeError(f"No valid model found in {self.model_dir}")
+                    raise RuntimeError(f"No valid model found in {self.model_path}")
                 
             except Exception as e2:
                 print(f"❌ All model loading attempts failed!")
