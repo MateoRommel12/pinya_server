@@ -193,6 +193,65 @@ Key configuration options in `app.py`:
 
 This project is part of a capstone project. Please respect the academic integrity guidelines.
 
+## Deployment
+
+### Deploying to Render
+
+This application is configured for easy deployment on [Render](https://render.com).
+
+#### Prerequisites
+- Your code pushed to a GitHub repository
+- A Render account (free tier available)
+
+#### Deployment Steps
+
+1. **Connect GitHub to Render**
+   - Sign up/log in to [Render](https://render.com)
+   - Connect your GitHub account
+
+2. **Create a New Web Service**
+   - Click "New +" → "Web Service"
+   - Select your GitHub repository
+   - Choose the branch to deploy (usually `main`)
+
+3. **Configure the Service**
+   - **Name**: `pineapple-backend` (or your preferred name)
+   - **Environment**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+
+4. **Environment Variables** (Optional)
+   Add these if you want to customize:
+   - `MODEL_PATH`: Path to your ML model
+   - `DETECTOR_PATH`: Path to detection model
+   - `CLASS_ORDER`: Comma-separated class names
+
+5. **Deploy**
+   - Click "Create Web Service"
+   - Render will automatically build and deploy your app
+   - You'll get a URL like `https://your-app-name.onrender.com`
+
+#### Using render.yaml (Alternative)
+
+For easier configuration, this project includes a `render.yaml` file. Simply:
+1. Push the `render.yaml` to your repository
+2. In Render, create a new service and select "Use render.yaml"
+3. Render will automatically configure everything
+
+#### Production Considerations
+
+- **Free Tier Limitations**: Render's free tier may spin down after inactivity
+- **Model Files**: Large ML models (>500MB) might need external storage
+- **Database**: Consider upgrading to PostgreSQL for production
+- **Environment Variables**: Set sensitive data via Render's environment variables
+- **Custom Domain**: Available on paid plans
+
+#### Monitoring and Logs
+
+- View logs in the Render dashboard
+- Monitor performance and resource usage
+- Set up alerts for downtime
+
 ## Contact
 
 For questions or support, please open an issue in the GitHub repository.

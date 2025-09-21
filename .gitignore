@@ -77,6 +77,8 @@ uploads/*
 *.log
 
 # Model files (optional - uncomment if models are too large for git)
+# Note: For Render deployment, keep models in repo if under 500MB
+# If models are too large, consider using external storage (S3, etc.)
 # assets/models/*/
 # *.keras
 # *.pb
