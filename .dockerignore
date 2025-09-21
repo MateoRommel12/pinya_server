@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+
+# Backup files
+app_corrupted.py
+app_new.py
+
+# Database
+predictions.db
+*.sqlite
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Documentation
+README.md

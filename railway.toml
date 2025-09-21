@@ -1,11 +1,14 @@
 [build]
 builder = "NIXPACKS"
+buildCommand = "pip install -r requirements.txt"
 
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
+startCommand = "uvicorn app:app --host 0.0.0.0 --port $PORT"
 
 [env]
 PYTHONUNBUFFERED = "1"
 PIP_NO_CACHE_DIR = "1"
+NIXPACKS_BUILD_TIME_LIMIT = "900"
