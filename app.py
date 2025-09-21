@@ -279,11 +279,17 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
+    # Debug: Check what files actually exist in the detector directory
+    detector_files = []
+    if os.path.exists(DETECTOR_PATH):
+        detector_files = os.listdir(DETECTOR_PATH)
+    
     return {
         "status": "ok",
         "mode": "full_processing",
         "detection_method": "backend_yolov8",
         "detector_path": DETECTOR_PATH,
+        "detector_files": detector_files,  # Debug info
         "classifier_path": MODEL_PATH,
         "class_names": CLASS_NAMES,
         "tf_version": tf.__version__,
