@@ -41,3 +41,16 @@ uploads/*
 
 # Documentation
 README.md
+
+# Railway specific
+railway.toml
+render.yaml
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Other config files
+launch.json
+run_backend.bat
+
