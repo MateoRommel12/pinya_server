@@ -284,22 +284,47 @@ class UltralyticsYOLODetector:
             }
         }
 
-# Initialize both detector and classifier
-try:
-    # Load detector first
-    detector = UltralyticsYOLODetector(DETECTOR_PATH)
-    print(f"✅ Pineapple detector loaded from: {DETECTOR_PATH}")
-    
-    # Load classifier
-    classifier = KerasClassifier(MODEL_PATH, CLASS_NAMES)
-    print(f"✅ Sweetness classifier loaded from: {MODEL_PATH}")
-    print(f"🍯 Classes: {CLASS_NAMES}")
-    print(f"🚀 Backend ready for full processing (detection + sweetness analysis)")
-except Exception as e:
-    print(f"⚠️  Warning: Could not load models: {e}")
-    print("Models will be loaded on first prediction request")
-    detector = None
-    classifier = None
+# Initialize models with lazy loading for memory optimization
+detector = None
+classifier = None
+print("🔄 Models will be loaded on first prediction request to save memory")
+
+def get_detector():
+    """Lazy load detector model"""
+    global detector
+    if detector is None:
+        try:
+            detector = UltralyticsYOLODetector(DETECTOR_PATH)
+            print(f"✅ Pineapple detector loaded from: {DETECTOR_PATH}")
+        except Exception as e:
+            print(f"❌ Failed to load detector: {e}")
+            return None
+    return detector
+
+def get_classifier():
+    """Lazy load classifier model"""
+    global classifier
+    if classifier is None:
+        try:
+            classifier = KerasClassifier(MODEL_PATH, CLASS_NAMES)
+            print(f"✅ Sweetness classifier loaded from: {MODEL_PATH}")
+            print(f"🍯 Classes: {CLASS_NAMES}")
+        except Exception as e:
+            print(f"❌ Failed to load classifier: {e}")
+            return None
+    return classifier
+
+def unload_models():
+    """Unload models to free memory"""
+    global detector, classifier
+    if detector is not None:
+        del detector
+        detector = None
+        print("🗑️ Detector model unloaded")
+    if classifier is not None:
+        del classifier
+        classifier = None
+        print("🗑️ Classifier model unloaded")
 
 # ---------------- FastAPI ----------------
 app = FastAPI(title="Pineapple Sweetness API - YOLOv8 Backend Edition", version="3.0.0")
@@ -361,13 +386,11 @@ async def predict(file: UploadFile = File(...), db: Session = Depends(get_db)):
 
     try:
         # Lazy load both models if needed
-        global detector, classifier
-        if detector is None:
-            print(f"🔄 Loading detector from: {DETECTOR_PATH}")
-            detector = UltralyticsYOLODetector(DETECTOR_PATH)
-        if classifier is None:
-            print(f"🔄 Loading classifier from: {MODEL_PATH}")
-            classifier = KerasClassifier(MODEL_PATH, CLASS_NAMES)
+        detector = get_detector()
+        classifier = get_classifier()
+        
+        if detector is None or classifier is None:
+            raise HTTPException(status_code=500, detail="Failed to load ML models")
 
         print("🍍 Backend: Full processing (detection + sweetness analysis)")
         
@@ -422,6 +445,9 @@ async def predict(file: UploadFile = File(...), db: Session = Depends(get_db)):
     db.commit()
     db.refresh(row)
 
+    # Clean up memory after prediction to prevent OOM
+    unload_models()
+    
     return {
         "id": row.id,
         "timestamp": row.timestamp.isoformat() + "Z",
