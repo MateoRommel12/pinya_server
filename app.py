@@ -20,7 +20,7 @@ DEFAULT_DETECTOR_PATH = os.path.normpath(
     os.path.join(BASE_DIR, "models/pineapple_detector.pt")
 )
 MODEL_PATH = os.environ.get("MODEL_PATH", DEFAULT_MODEL_PATH)
-DETECTOR_PATH = os.environ.get("DETECTOR_PATH", DEFAULT_DETECTOR_PATH)
+DETECTOR_PATH = os.environ.get("DETECTOR_PATH", DEFAULT_DETECTOR_PATH)  
 
 # Set class order if needed: e.g. CLASS_ORDER="High,Medium,Low"
 CLASS_ORDER_ENV = os.environ.get("CLASS_ORDER")
