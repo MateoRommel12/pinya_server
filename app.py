@@ -14,10 +14,10 @@ import tensorflow as tf
 # ---------------- Config ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MODEL_PATH = os.path.normpath(
-    os.path.join(BASE_DIR, "assets/models/pineapple_sweetness_classifier.keras")
+    os.path.join(BASE_DIR, "assets/models/pineapple_classifier/pineapple_sweetness_classifier.keras")
 )
 DEFAULT_DETECTOR_PATH = os.path.normpath(
-    os.path.join(BASE_DIR, "assets/models/pineapple_detector.pt")
+    os.path.join(BASE_DIR, "assets/models/pineapple_detector")
 )
 MODEL_PATH = os.environ.get("MODEL_PATH", DEFAULT_MODEL_PATH)
 DETECTOR_PATH = os.environ.get("DETECTOR_PATH", DEFAULT_DETECTOR_PATH)  
