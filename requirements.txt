@@ -1,10 +1,9 @@
-# Optimized for memory efficiency on Render free tier
-tensorflow-cpu==2.17.0
-keras==3.4.1
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pillow==10.4.0
-numpy==1.26.4
-python-multipart==0.0.6
-SQLAlchemy==2.0.23
-ultralytics==8.2.0
+tensorflow-cpu>=2.19.0
+keras>=3.8.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.25.0
+pillow>=10.4.0
+numpy>=2.1.0
+python-multipart>=0.0.6
+SQLAlchemy>=2.0.0
+ultralytics>=8.0.0
