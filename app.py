@@ -14,6 +14,20 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 import tensorflow as tf
 
+# Try to download models from S3 on startup
+try:
+    from s3_model_loader import setup_models_from_s3
+    print("🔄 Attempting to download models from S3...")
+    s3_success = setup_models_from_s3()
+    if s3_success:
+        print("✅ Models loaded from S3 successfully!")
+    else:
+        print("⚠️ S3 download failed, using local models if available")
+except ImportError:
+    print("⚠️ S3 model loader not available, using local models")
+except Exception as e:
+    print(f"⚠️ S3 setup failed: {e}")
+
 # ---------------- Config ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_MODEL_PATH = os.path.normpath(
