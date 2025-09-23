@@ -2,46 +2,62 @@
 .git
 .gitignore
 
-# Backup files
-app_corrupted.py
-app_new.py
-
-# Database
-predictions.db
-*.sqlite
-
 # Python
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
-*.so
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
 .pytest_cache
 
 # Virtual environments
-venv/
+.env
+.venv
 env/
-.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-
-# Uploads
-uploads/*
-!uploads/.gitkeep
+# Project specific
+# Uploads directory will be created at runtime
+*.db
+*.sqlite
+*.sqlite3
 
 # Documentation
 README.md
+*.md
 
-# Other config files
-launch.json
-run_backend.bat
+# Platform specific configs (keep only Docker and Railway)
+render.yaml
+fly.toml
+Procfile
+runtime.txt

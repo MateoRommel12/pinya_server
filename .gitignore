@@ -73,9 +73,16 @@ Thumbs.db
 # Project specific
 *.log
 
-# Hugging Face Spaces specific
-# Models are included in repo for HF Spaces deployment
-# HF Spaces handles model files automatically
+# Docker
+.dockerignore
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Railway specific
+.railway/
 
 # Environment variables
 .env.local

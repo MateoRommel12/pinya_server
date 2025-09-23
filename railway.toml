@@ -1,0 +1,13 @@
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[env]
+MODEL_PATH = "/app/assets/models/pineapple_classifier/pineapple_sweetness_classifier.keras"
+DETECTOR_PATH = "/app/assets/models/pineapple_detector"
+CLASS_ORDER = "High,Medium,Low"

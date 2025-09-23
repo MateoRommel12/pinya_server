@@ -1,15 +1,21 @@
-# Hugging Face Spaces - Pineapple Detection + Sweetness Analysis
+# FastAPI Backend - Pineapple Detection + Sweetness Analysis
 import os
 import json
 import uuid
 import datetime
 from io import BytesIO
 from typing import Dict, Any, List
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
-import gradio as gr
 import tensorflow as tf
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float, Text, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
 
 # ---------------- Config ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -262,92 +268,205 @@ def get_classifier():
             return None
     return classifier
 
-# ---------------- Gradio Interface ----------------
-def predict_pineapple(image):
-    """Main prediction function for Gradio interface."""
-    if image is None:
-        return "Please upload an image", None
+# ---------------- Database Setup ----------------
+SQLALCHEMY_DATABASE_URL = "sqlite:///./pineapple_predictions.db"
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+class Prediction(Base):
+    __tablename__ = "predictions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    image_path = Column(String)
+    is_pineapple = Column(Boolean)
+    detection_confidence = Column(Float)
+    bounding_boxes = Column(Text)
+    prediction = Column(String)
+    confidence = Column(Float)
+
+Base.metadata.create_all(bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ---------------- FastAPI App ----------------
+app = FastAPI(
+    title="Pineapple Detection & Sweetness Analysis API",
+    description="API for detecting pineapples and analyzing their sweetness level",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure this properly for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Create uploads directory
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# ---------------- API Endpoints ----------------
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "message": "🍍 Pineapple Detection & Sweetness Analysis API",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "predict": "/predict (POST)",
+            "docs": "/docs"
+        }
+    }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    detector_files = []
+    if os.path.exists(DETECTOR_PATH):
+        detector_files = [f for f in os.listdir(DETECTOR_PATH) if f.endswith('.pt')]
+    
+    return {
+        "status": "healthy",
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "models": {
+            "classifier_path": MODEL_PATH,
+            "classifier_exists": os.path.exists(MODEL_PATH),
+            "detector_path": DETECTOR_PATH,
+            "detector_exists": os.path.exists(DETECTOR_PATH),
+            "detector_files": detector_files
+        },
+        "processing_mode": "Full (Detection + Sweetness Analysis)"
+    }
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Predict pineapple detection and sweetness from uploaded image."""
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Use JPG, PNG, or WebP.")
+    
+    data = await file.read()
+    
+    # Save uploaded file for auditing/history
+    ext = os.path.splitext(file.filename or "")[1].lower() or ".jpg"
+    filename = f"{uuid.uuid4().hex}{ext}"
+    save_path = os.path.join(UPLOAD_DIR, filename)
+    with open(save_path, "wb") as f:
+        f.write(data)
     
     try:
-        # Convert PIL image to bytes
-        img_bytes = BytesIO()
-        image.save(img_bytes, format='JPEG')
-        image_data = img_bytes.getvalue()
-        
         # Get models
         detector_model = get_detector()
         classifier_model = get_classifier()
         
         if detector_model is None or classifier_model is None:
-            return "❌ Failed to load ML models", None
+            raise HTTPException(status_code=500, detail="Failed to load ML models")
         
-        # Step 1: Detect if image contains pineapple
-        detection_result = detector_model.detect(image_data, detection_threshold=0.5, confidence_threshold=0.3)
+        print("🍍 Backend: Full processing (detection + sweetness analysis)")
         
-        result_text = f"🍍 **Pineapple Detection:**\n"
-        result_text += f"- Detected: {'✅ Yes' if detection_result['is_pineapple'] else '❌ No'}\n"
-        result_text += f"- Confidence: {detection_result['confidence']:.2%}\n"
-        result_text += f"- Detections: {detection_result['total_detections']}\n\n"
+        # Step 1: Detect if image contains pineapple using YOLOv8
+        detection_result = detector_model.detect(data, detection_threshold=0.5, confidence_threshold=0.3)
         
-        if detection_result['is_pineapple']:
-            # Step 2: Analyze sweetness
-            sweetness_result = classifier_model.predict(image_data)
-            
-            result_text += f"🍯 **Sweetness Analysis:**\n"
-            result_text += f"- Prediction: {sweetness_result['prediction']}\n"
-            result_text += f"- Confidence: {sweetness_result['confidence']:.2%}\n\n"
-            
-            result_text += f"📊 **Probabilities:**\n"
-            for class_name, prob in sweetness_result['probabilities'].items():
-                result_text += f"- {class_name}: {prob:.2%}\n"
+        result = {
+            "is_pineapple": detection_result["is_pineapple"],
+            "detection_confidence": detection_result["confidence"],
+            "detection_threshold": detection_result["threshold"],
+            "confidence_threshold": detection_result["confidence_threshold"],
+            "detections": detection_result["detections"],
+            "total_detections": detection_result["total_detections"],
+            "all_detections": detection_result.get("all_detections", []),
+            "debug_info": detection_result.get("debug_info", {})
+        }
+        
+        # Step 2: Only classify sweetness if pineapple is detected
+        if detection_result["is_pineapple"]:
+            sweetness_result = classifier_model.predict(data)
+            result.update({
+                "prediction": sweetness_result["prediction"],
+                "confidence": sweetness_result["confidence"],
+                "probabilities": sweetness_result["probabilities"],
+                "message": f"Pineapple detected with {detection_result['confidence']:.2%} confidence. Predicted sweetness: {sweetness_result['prediction']} ({sweetness_result['confidence']:.2%} confidence)"
+            })
         else:
-            result_text += "🍯 **Sweetness Analysis:** Skipped (no pineapple detected)"
-        
-        return result_text, image
-        
+            result.update({
+                "prediction": None,
+                "confidence": None,
+                "probabilities": None,
+                "message": f"No pineapple detected (confidence: {detection_result['confidence']:.2%}). Sweetness analysis skipped."
+            })
+            
     except Exception as e:
-        return f"❌ Error: {str(e)}", None
+        try:
+            os.remove(save_path)
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    # Store in DB
+    row = Prediction(
+        image_path=os.path.relpath(save_path, BASE_DIR),
+        is_pineapple=result["is_pineapple"],
+        detection_confidence=result["detection_confidence"],
+        bounding_boxes=json.dumps(result["detections"]) if result["detections"] else None,
+        prediction=result.get("prediction"),
+        confidence=result.get("confidence"),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    
+    # Clean up memory after prediction to prevent OOM
+    unload_models()
+    
+    return {
+        "id": row.id,
+        "timestamp": row.timestamp.isoformat() + "Z",
+        "image_path": row.image_path,
+        "is_pineapple": result["is_pineapple"],
+        "detection_confidence": result["detection_confidence"],
+        "detection_threshold": result["detection_threshold"],
+        "confidence_threshold": result["confidence_threshold"],
+        "detections": result["detections"],
+        "total_detections": result["total_detections"],
+        "all_detections": result.get("all_detections", []),
+        "debug_info": result.get("debug_info", {}),
+        "prediction": result.get("prediction"),
+        "confidence": result.get("confidence"),
+        "probabilities": result.get("probabilities"),
+        "message": result.get("message"),
+    }
 
-# Create Gradio interface
-with gr.Blocks(title="Pineapple Detection & Sweetness Analysis", theme=gr.themes.Soft()) as demo:
-    gr.Markdown("""
-    # 🍍 Pineapple Detection & Sweetness Analysis
-    
-    Upload an image to detect pineapples and analyze their sweetness level!
-    
-    **Features:**
-    - 🎯 **Detection**: Uses YOLOv8 to detect pineapples
-    - 🍯 **Sweetness Classification**: Predicts sweetness level (High/Medium/Low)
-    - 📊 **Confidence Scores**: Shows detection and classification confidence
-    """)
-    
-    with gr.Row():
-        with gr.Column():
-            input_image = gr.Image(
-                label="Upload Pineapple Image",
-                type="pil",
-                height=400
-            )
-            predict_btn = gr.Button("🔍 Analyze Image", variant="primary", size="lg")
-        
-        with gr.Column():
-            output_text = gr.Markdown(label="Analysis Results")
-            output_image = gr.Image(label="Processed Image", height=400)
-    
-    # Event handlers
-    predict_btn.click(
-        fn=predict_pineapple,
-        inputs=[input_image],
-        outputs=[output_text, output_image]
-    )
-    
-    # Auto-predict on image upload
-    input_image.change(
-        fn=predict_pineapple,
-        inputs=[input_image],
-        outputs=[output_text, output_image]
-    )
+@app.get("/predictions")
+async def get_predictions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Get prediction history."""
+    predictions = db.query(Prediction).offset(skip).limit(limit).all()
+    return {
+        "predictions": [
+            {
+                "id": p.id,
+                "timestamp": p.timestamp.isoformat() + "Z",
+                "image_path": p.image_path,
+                "is_pineapple": p.is_pineapple,
+                "detection_confidence": p.detection_confidence,
+                "prediction": p.prediction,
+                "confidence": p.confidence,
+            }
+            for p in predictions
+        ],
+        "total": db.query(Prediction).count()
+    }
 
 # Launch the app
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
